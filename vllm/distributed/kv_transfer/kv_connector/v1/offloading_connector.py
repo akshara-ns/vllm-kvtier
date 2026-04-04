@@ -40,6 +40,77 @@ from vllm.v1.kv_offload.factory import OffloadingSpecFactory
 from vllm.v1.outputs import KVConnectorOutput
 from vllm.v1.request import Request
 
+ReqId = str
+
+logger = init_logger(__name__)
+
+
+@dataclass
+class OffloadingOperationMetrics:
+    op_size: int
+    op_time: float
+
+
+@dataclass
+class OffloadingConnectorStats(KVConnectorStats):
+    def __post_init__(self):
+        if not self.data:
+            # Empty container init, no data is passed in.
+            self.reset()
+
+    def reset(self):
+        self.data: dict[str, list[OffloadingOperationMetrics]] = {}
+
+    def aggregate(self, other: KVConnectorStats) -> KVConnectorStats:
+        if not other.is_empty():
+            for k, v in other.data.items():
+                if k not in self.data:
+                    self.data[k] = v
+                else:
+                    accumulator = self.data[k]
+                    assert isinstance(accumulator, list)
+                    accumulator.extend(v)
+        return self
+
+    def reduce(self) -> dict[str, int | float]:
+        """
+        Reduce the observations collected during a time interval to one or
+        more representative values (eg avg/median/sum of the series).
+        This is meant to be called by the logger to produce a summary of the
+        stats for the last time interval.
+        """
+        return_dict: dict[str, int | float] = {}
+        for transfer_type, ops_list in self.data.items():
+            assert isinstance(ops_list, list)
+            total_bytes = 0
+            total_time = 0.0
+            for op in ops_list:
+                assert isinstance(op, dict)
+                total_bytes += op["op_size"]
+                total_time += op["op_time"]
+            return_dict[f"{transfer_type}_total_bytes"] = total_bytes
+            return_dict[f"{transfer_type}_total_time"] = total_time
+        return return_dict
+
+    def is_empty(self) -> bool:
+        return not self.data
+
+    def record_transfer(self, num_bytes: int, time: float, transfer_type: TransferType):
+        src, dst = transfer_type
+        transfer_type_key = src + "_to_" + dst
+        op = OffloadingOperationMetrics(num_bytes, time)
+        if transfer_type_key in self.data:
+            self.data[transfer_type_key].append(op)
+        else:
+            self.data[transfer_type_key] = [op]
+
+
+@dataclass
+class OffloadingConnectorMetadata(KVConnectorMetadata):
+    reqs_to_load: dict[ReqId, TransferSpec]
+    reqs_to_store: dict[ReqId, TransferSpec]
+    eviction_log: list[dict] | None = None  # Eviction data for visualization
+
 
 class OffloadingConnector(KVConnectorBase_V1):
     @property
@@ -405,9 +476,41 @@ class OffloadingConnectorScheduler:
     def build_connector_meta(
         self, scheduler_output: SchedulerOutput
     ) -> KVConnectorMetadata:
+        reqs_to_store = self._get_reqs_to_store(scheduler_output)
+
+        # Trigger prefetch predictions for active requests
+        if self._prefetcher is not None:
+            try:
+                offloaded_blocks = self.manager.get_offloaded_blocks() \
+                    if hasattr(self.manager, "get_offloaded_blocks") else set()
+                for req_id in scheduler_output.num_scheduled_tokens:
+                    req = self._requests.get(req_id)
+                    if req is None:
+                        continue
+                    current = list(self._get_block_hashes(req))
+                    predictions = self._prefetcher.predict(
+                        req_id, current, offloaded_blocks,
+                    )
+                    for pred in predictions:
+                        logger.debug(
+                            "Prefetch predicted block %s for req %s",
+                            pred.block_hash, req_id,
+                        )
+            except Exception:
+                pass  # Non-critical
+
+        # Extract eviction log from manager for visualization/instrumentation
+        eviction_log = None
+        if hasattr(self.manager, 'get_eviction_log'):
+            try:
+                eviction_log = self.manager.get_eviction_log()
+            except Exception:
+                pass  # Non-critical
+
         meta = OffloadingConnectorMetadata(
             reqs_to_load=self._reqs_to_load,
-            reqs_to_store=self._get_reqs_to_store(scheduler_output),
+            reqs_to_store=reqs_to_store,
+            eviction_log=eviction_log,
         )
         self._reqs_to_load = {}
 
