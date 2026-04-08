@@ -93,6 +93,7 @@ class HybridOffloadingManager(OffloadingManager):
         # Eviction logging for visualization/instrumentation
         self.log_evictions: bool = log_evictions
         self.eviction_log: list[EvictionRecord] = [] if log_evictions else []
+        self._total_evictions: int = 0
 
     def update_attention_scores(
         self, scores: dict[BlockHash, float]
@@ -240,6 +241,7 @@ class HybridOffloadingManager(OffloadingManager):
             if len(to_evict) < num_to_evict:
                 return None
 
+        self._total_evictions += len(to_evict)
         eviction_time = time.monotonic()
         for block_hash in to_evict:
             meta = self.blocks.pop(block_hash)
@@ -347,6 +349,7 @@ class HybridOffloadingManager(OffloadingManager):
                 "gamma": self.gamma,
             },
             "free_backend_blocks": self.backend.get_num_free_blocks(),
+            "total_evictions": self._total_evictions,
         }
 
     def get_eviction_log(self) -> list[dict]:

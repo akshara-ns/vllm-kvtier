@@ -241,3 +241,8 @@ vllm/grpc/vllm_engine_pb2.pyi
 
 # Ignore generated cpu headers 
 csrc/cpu/cpu_attn_dispatch_generated.h
+<<<<<<< HEAD
+=======
+CLAUDE_CONTEXT.md
+>>>>>>> 904fedac7 (fix:  total_evictions counter)
+CLAUDE_CONTEXT.md

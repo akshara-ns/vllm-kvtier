@@ -37,6 +37,7 @@ class LRUOffloadingManager(OffloadingManager):
         # Eviction logging for visualization/instrumentation
         self.log_evictions: bool = log_evictions
         self.eviction_log: list[EvictionRecord] = [] if log_evictions else []
+        self._total_evictions: int = 0
 
     def lookup(self, block_hashes: Iterable[BlockHash]) -> int | None:
         hit_count = 0
@@ -94,6 +95,7 @@ class LRUOffloadingManager(OffloadingManager):
                 return None
 
         # evict blocks
+        self._total_evictions += len(to_evict)
         eviction_time = time.monotonic()
         for block_hash in to_evict:
             # Log eviction for instrumentation/visualization
@@ -161,6 +163,15 @@ class LRUOffloadingManager(OffloadingManager):
         if self.events is not None:
             yield from self.events
             self.events.clear()
+
+    def get_stats(self) -> dict:
+        """Return current manager statistics for instrumentation."""
+        return {
+            "total_blocks": len(self.blocks),
+            "ready_blocks": sum(1 for b in self.blocks.values() if b.is_ready),
+            "free_backend_blocks": self.backend.get_num_free_blocks(),
+            "total_evictions": self._total_evictions,
+        }
 
     def get_eviction_log(self) -> list[dict]:
         """

@@ -290,17 +290,23 @@ def run_benchmark(config: BenchmarkConfig) -> BenchmarkMetrics:
         p50_ttft = 0.0
         p95_ttft = 0.0
 
-    # Try to read eviction/transfer stats from the connector if exposed
+    # Try to read eviction/transfer stats from the connector if exposed.
+    # In-process mode: engine_core is InprocClient wrapping the real EngineCore.
     total_evictions = 0
     bytes_gpu_to_cpu = 0
     bytes_cpu_to_gpu = 0
     try:
-        stats = llm.llm_engine.engine_core.kv_connector.get_stats()
-        total_evictions = stats.get("total_evictions", 0)
-        bytes_gpu_to_cpu = stats.get("bytes_gpu_to_cpu", 0)
-        bytes_cpu_to_gpu = stats.get("bytes_cpu_to_gpu", 0)
+        real_core = getattr(llm.llm_engine.engine_core, 'engine_core', None)
+        if real_core is not None:
+            connector = real_core.scheduler.get_kv_connector()
+            manager = getattr(connector, 'manager', None)
+            if manager is not None and hasattr(manager, 'get_stats'):
+                stats = manager.get_stats()
+                total_evictions = stats.get("total_evictions", 0)
+                bytes_gpu_to_cpu = stats.get("bytes_gpu_to_cpu", 0)
+                bytes_cpu_to_gpu = stats.get("bytes_cpu_to_gpu", 0)
     except Exception:
-        pass  # Connector stats not yet exposed via public API
+        pass  # Connector stats not accessible in this deployment mode
 
     metrics = BenchmarkMetrics(
         policy=config.eviction_policy,
