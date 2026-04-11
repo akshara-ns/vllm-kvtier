@@ -2,7 +2,7 @@
 #SBATCH -N 1
 #SBATCH -p GPU-shared
 #SBATCH -t 01:00:00
-#SBATCH -A cis250224p
+#SBATCH -A cis260009p
 #SBATCH --gpus=v100-32:1
 #SBATCH --job-name=vllm_build
 #SBATCH --output=/ocean/projects/cis260009p/nadayanu/work/vllm/logs/build_%j.log
@@ -38,13 +38,13 @@ rm -f "$WORK_DIR/vllm/_C.abi3.so"
 
 echo "=== Installing torch==2.5.1+cu124 ==="
 pip install "torch==2.5.1" "numpy<2" setuptools wheel \
-    --index-url https://download.pytorch.org/whl/cu124 -q
+    --index-url https://download.pytorch.org/whl/cu124
 echo "torch version: $(python -c 'import torch; print(torch.__version__)')"
 echo "CUDA available: $(python -c 'import torch; print(torch.cuda.is_available())')"
 
 echo "=== Building vLLM from source (this takes ~10-15 min) ==="
 cd "$WORK_DIR"
-pip install -e . -q
+pip install -e .
 
 echo "=== Verifying install ==="
 python -c "from vllm import LLM; print('vllm OK')"
