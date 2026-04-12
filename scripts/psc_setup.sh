@@ -37,6 +37,10 @@ echo "=== Bootstrapping pip ==="
 python -m ensurepip --upgrade
 python -m pip install --upgrade pip
 
+# Install build tools required before any pyproject.toml-based install
+echo "=== Installing build tools ==="
+python -m pip install packaging setuptools wheel
+
 # Use python -m pip throughout to avoid PATH issues
 echo "=== Installing torch==2.5.1+cu124 ==="
 python -m pip install "torch==2.5.1" "numpy<2" setuptools wheel \
