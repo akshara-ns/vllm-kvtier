@@ -42,6 +42,7 @@ uv venv --python 3.12 .venv
 source .venv/bin/activate
 
 echo "=== Venv python: $(which python) — $(python --version) ==="
+echo "=== Python origin: $(python -c 'import sys; print(sys.executable)') ==="
 
 # Install torch first, pinned to cu124
 uv pip install "torch==2.5.1" "numpy<2" setuptools wheel \
@@ -49,9 +50,14 @@ uv pip install "torch==2.5.1" "numpy<2" setuptools wheel \
 
 echo "=== torch: $(python -c 'import torch; print(torch.__version__)') | CUDA: $(python -c 'import torch; print(torch.cuda.is_available())') ==="
 
+# Verify torch is from the venv before building
+echo "=== Torch location: $(python -c 'import torch; print(torch.__file__)') ==="
+echo "=== Torch version: $(python -c 'import torch; print(torch.__version__)') ==="
+
 # Build vLLM from source against the GPU node's live CUDA
+# --no-build-isolation ensures the build uses THIS venv's torch, not a cached/system one
 echo "=== Building vLLM (10-15 min) ==="
-uv pip install -e .
+python -m pip install -e . --no-build-isolation
 
 # Verify
 echo "=== Verifying ==="
