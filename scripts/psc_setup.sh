@@ -35,18 +35,18 @@ echo "=== Python: $(python --version) | $(python -c 'import sys; print(sys.execu
 # Bootstrap pip inside the venv
 echo "=== Bootstrapping pip ==="
 python -m ensurepip --upgrade
+python -m pip install --upgrade pip
 
-# Install torch pinned to cu124
+# Use python -m pip throughout to avoid PATH issues
 echo "=== Installing torch==2.5.1+cu124 ==="
-pip install "torch==2.5.1" "numpy<2" setuptools wheel \
+python -m pip install "torch==2.5.1" "numpy<2" setuptools wheel \
     --index-url https://download.pytorch.org/whl/cu124
 
 echo "=== torch: $(python -c 'import torch; print(torch.__version__)') ==="
 
 # Install all vLLM Python dependencies (no C extension build yet — needs GPU node)
 echo "=== Installing vLLM Python deps ==="
-pip install -r requirements/common.txt 2>/dev/null || true
-pip install -e . --no-build-isolation --no-deps
+python -m pip install -e . --no-build-isolation --no-deps
 
 echo ""
 echo "=== Setup complete! ==="

@@ -33,6 +33,7 @@ echo "=== Torch: $(python -c 'import torch; print(torch.__version__)') | CUDA: $
 rm -f "$WORK_DIR/vllm/_C.abi3.so"
 
 echo "=== Rebuilding _C.abi3.so against GPU node CUDA (no downloads needed) ==="
+python -m pip install --upgrade pip
 python -m pip install -e . --no-build-isolation --no-deps
 
 echo "=== Verifying ==="
