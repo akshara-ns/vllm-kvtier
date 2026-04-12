@@ -38,7 +38,7 @@ rm -rf .venv
 
 # Create a clean venv from the system python (not conda)
 source /ocean/projects/cis260009p/nadayanu/work/uv/env
-uv venv --python 3.12 .venv
+uv venv --python /usr/bin/python3.11 .venv
 source .venv/bin/activate
 
 echo "=== Venv python: $(which python) — $(python --version) ==="
