@@ -18,6 +18,7 @@ conda deactivate 2>/dev/null || true
 source /etc/profile.d/modules.sh
 module load cuda/12.4.0
 module load gcc/10.2.0
+export CUDA_HOME=$(dirname $(dirname $(which nvcc)))
 
 mkdir -p "$WORK_DIR/hf_cache" "$WORK_DIR/triton_cache" "$WORK_DIR/xdg_cache" "$WORK_DIR/logs"
 
@@ -39,7 +40,7 @@ python -m pip install --upgrade pip
 
 # Install build tools required before any pyproject.toml-based install
 echo "=== Installing build tools ==="
-python -m pip install packaging setuptools wheel
+python -m pip install "setuptools>=77" packaging wheel setuptools_scm cmake ninja
 
 # Use python -m pip throughout to avoid PATH issues
 echo "=== Installing torch==2.5.1+cu124 ==="

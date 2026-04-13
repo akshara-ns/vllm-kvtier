@@ -22,6 +22,7 @@ nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 source /etc/profile.d/modules.sh
 module load cuda/12.4.0
 module load gcc/10.2.0
+export CUDA_HOME=$(dirname $(dirname $(which nvcc)))
 
 cd "$WORK_DIR"
 source .venv/bin/activate
