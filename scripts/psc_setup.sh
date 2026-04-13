@@ -8,12 +8,10 @@
 set -euo pipefail
 
 WORK_DIR="/ocean/projects/cis260009p/nadayanu/work/vllm"
+# PSC has no Python 3.11 dev headers; use anaconda Python 3.12 which includes them
+PYTHON="/opt/packages/anaconda3-2024.10-1/bin/python3.12"
 
 echo "=== [$(date)] Setting up venv on $(hostname) ==="
-
-# Ensure conda is not interfering
-conda deactivate 2>/dev/null || true
-conda deactivate 2>/dev/null || true
 
 source /etc/profile.d/modules.sh
 module load cuda/12.4.0
@@ -24,34 +22,37 @@ mkdir -p "$WORK_DIR/hf_cache" "$WORK_DIR/triton_cache" "$WORK_DIR/xdg_cache" "$W
 
 cd "$WORK_DIR"
 
-# Nuke old venv and create a clean one from system Python 3.11 (not conda)
-echo "=== Creating clean venv from /usr/bin/python3.11 ==="
+# Create clean venv from conda's Python 3.12 (has dev headers at include/python3.12)
+echo "=== Creating clean venv from $PYTHON ==="
 rm -rf .venv
 source /ocean/projects/cis260009p/nadayanu/work/uv/env
-uv venv --python /usr/bin/python3.11 .venv
+uv venv --python "$PYTHON" .venv
 source .venv/bin/activate
 
 echo "=== Python: $(python --version) | $(python -c 'import sys; print(sys.executable)') ==="
+echo "=== Headers: $(python -c 'import sysconfig; print(sysconfig.get_path(\"include\"))') ==="
 
-# Bootstrap pip inside the venv
+# Bootstrap pip
 echo "=== Bootstrapping pip ==="
-python -m ensurepip --upgrade
 python -m pip install --upgrade pip
 
 # Install build tools required before any pyproject.toml-based install
 echo "=== Installing build tools ==="
 python -m pip install "setuptools>=77" packaging wheel setuptools_scm cmake ninja
 
-# Use python -m pip throughout to avoid PATH issues
 echo "=== Installing torch==2.5.1+cu124 ==="
-python -m pip install "torch==2.5.1" "numpy<2" setuptools wheel \
+python -m pip install "torch==2.5.1" "numpy<2" \
     --index-url https://download.pytorch.org/whl/cu124
 
 echo "=== torch: $(python -c 'import torch; print(torch.__version__)') ==="
 
-# Install all vLLM Python dependencies (no C extension build yet — needs GPU node)
-echo "=== Installing vLLM Python deps ==="
-python -m pip install -e . --no-build-isolation --no-deps
+# Register vLLM as Python package — VLLM_TARGET_DEVICE=empty skips CMake on login node
+echo "=== Installing vLLM Python package (no C extension — needs GPU node) ==="
+VLLM_TARGET_DEVICE=empty python -m pip install -e . --no-build-isolation --no-deps
+
+# Install all Python runtime dependencies
+echo "=== Installing vLLM runtime deps ==="
+python -m pip install -r requirements/common.txt
 
 echo ""
 echo "=== Setup complete! ==="
