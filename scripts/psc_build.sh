@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -N 1
 #SBATCH -p GPU-shared
-#SBATCH -t 01:00:00
+#SBATCH -t 04:00:00
 #SBATCH -A cis260009p
 #SBATCH --gpus=v100-32:1
 #SBATCH --job-name=vllm_build
