@@ -35,6 +35,8 @@ rm -f "$WORK_DIR/vllm/_C.abi3.so"
 
 echo "=== Rebuilding _C.abi3.so against GPU node CUDA (no downloads needed) ==="
 python -m pip install --upgrade pip
+# Ensure torch version matches what .so will be compiled against
+python -m pip install "torch==2.6.0" --index-url https://download.pytorch.org/whl/cu124 -q
 python -m pip install -e . --no-build-isolation --no-deps
 
 echo "=== Verifying ==="

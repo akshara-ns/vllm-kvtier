@@ -41,7 +41,7 @@ echo "=== Installing build tools ==="
 python -m pip install "setuptools>=77" packaging wheel setuptools_scm cmake ninja
 
 echo "=== Installing torch==2.5.1+cu124 ==="
-python -m pip install "torch==2.5.1" "numpy<2" \
+python -m pip install "torch==2.6.0" "numpy<2" \
     --index-url https://download.pytorch.org/whl/cu124
 
 echo "=== torch: $(python -c 'import torch; print(torch.__version__)') ==="
