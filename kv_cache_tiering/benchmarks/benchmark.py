@@ -212,6 +212,7 @@ def run_benchmark(config: BenchmarkConfig) -> BenchmarkMetrics:
         gpu_memory_utilization=config.gpu_memory_utilization,
         max_model_len=config.max_model_len,
         kv_transfer_config=kv_transfer_config,
+        enforce_eager=True,  # Required on V100 — CUDAGraph unsupported on compute cap 7.0
     )
 
     prompts = load_prompts(config)
