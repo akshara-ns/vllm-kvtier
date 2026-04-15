@@ -4,8 +4,10 @@
  */
 
 // Include both AMD and NVIDIA fp8 types to avoid circular import
-#include <torch/headeronly/util/Float8_e4m3fnuz.h>
-#include <torch/headeronly/util/Float8_e4m3fn.h>
+// Use c10/util paths for compatibility with torch < 2.7 (torch/headeronly/ was
+// introduced in 2.7; c10/util headers exist from torch 2.1+ and link fine).
+#include <c10/util/Float8_e4m3fnuz.h>
+#include <c10/util/Float8_e4m3fn.h>
 
 namespace vllm {
 
