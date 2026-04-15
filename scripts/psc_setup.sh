@@ -26,11 +26,11 @@ cd "$WORK_DIR"
 echo "=== Creating clean venv from $PYTHON ==="
 rm -rf .venv
 source /ocean/projects/cis260009p/nadayanu/work/uv/env
-uv venv --python "$PYTHON" .venv
+uv venv --python "$PYTHON" --seed .venv
 source .venv/bin/activate
 
 echo "=== Python: $(python --version) | $(python -c 'import sys; print(sys.executable)') ==="
-echo "=== Headers: $(python -c 'import sysconfig; print(sysconfig.get_path(\"include\"))') ==="
+echo "=== Headers: $(python -c 'import sysconfig; print(sysconfig.get_path("include"))') ==="
 
 # Bootstrap pip
 echo "=== Bootstrapping pip ==="
