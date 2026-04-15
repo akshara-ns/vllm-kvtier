@@ -245,7 +245,8 @@ TORCH_LIBRARY_EXPAND(TORCH_EXTENSION_NAME, ops) {
   // Quantization ops
 #ifndef USE_ROCM
   // DeepSeek V3 fused A GEMM (SM 9.0+, bf16 only, 1-16 tokens).
-  ops.def(
+  // Not registered on SM70 (V100) — requires SM90+.
+//  ops.def(
 //      "dsv3_fused_a_gemm(Tensor! output, Tensor mat_a, Tensor mat_b) -> ()");
 //  ops.impl("dsv3_fused_a_gemm", torch::kCUDA, &dsv3_fused_a_gemm);
 
